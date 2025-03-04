@@ -15,8 +15,8 @@ func main() {
 		hostname = "localhost"
 	}
 	hostport := os.Getenv("HOSTPORT")
-	if hostname == "" {
-		hostname = "8000"
+	if hostport == "" {
+		hostport = "8000"
 	}
 
 	router := api.RoutesSetup()

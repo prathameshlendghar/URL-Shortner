@@ -13,7 +13,6 @@ func RoutesSetup() *http.ServeMux{
 	mux.HandleFunc("/shorten", handlers.ShortenURL)
 	mux.HandleFunc("/editurl", handlers.EditURL)
 	mux.HandleFunc("/deleteurl", handlers.DeleteURL)
-	mux.HandleFunc("/addtag", handlers.AddTags)
-
+	
 	return mux
 }
