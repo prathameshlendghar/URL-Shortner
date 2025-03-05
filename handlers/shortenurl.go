@@ -5,9 +5,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
+	"github.com/prathameshlendghar/URL-Shortner/internal/database"
 	"github.com/prathameshlendghar/URL-Shortner/models"
 )
+
+func makeShortBase62(counter int64) string {
+	base62 := "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ+/"
+	var shortStr string = ""
+	for counter > 0 {
+		mod := counter % 62
+		shortStr = shortStr + string(base62[mod])
+		counter /= 62
+	}
+	return shortStr
+}
 
 func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -52,19 +65,35 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	parsedUrl.RawQuery = url.QueryEscape(parsedUrl.RawQuery)
 
-	parsedLongUrl := parsedUrl.String()
+	// parsedLongUrl := parsedUrl.String()
 
-	fmt.Println(parsedLongUrl)
-
-
+	// fmt.Println(parsedLongUrl)
 
 	//TODO: Check for expiration is there or else give the expration
 
 	//Take the counter from postgres database
+	var counter int64 = database.GetCounter()
 
 	//Create a short url in base62 format
+	shortUniqueStr := makeShortBase62(counter)
+	// fmt.Println(shortUniqueStr)
 
 	//Store it inside the Database
+	var dbStruct models.ShortUrlDB
+	dbStruct.Id = counter
+	dbStruct.LongUrl = requestBody.LongUrl
+	dbStruct.ShortUrl = shortUniqueStr
+	dbStruct.CreatedAt = time.Now()
+	dbStruct.ExpireAt = dbStruct.CreatedAt.Add(48 * time.Hour)
+	dbStruct.Tag = "Abc"
+
+	database.InsertShortUrl(&dbStruct)
+
+	// if requestBody.ExpireAt != "" {
+	// 	dbStruct.ExpireAt = requestBody.ExpireAt
+	// } else {
+	// 	dbStruct.ExpireAt = time.Now() + time
+	// }
 
 	//Return the short url to the user in writer response
 

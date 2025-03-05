@@ -7,6 +7,7 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/prathameshlendghar/URL-Shortner/models"
 )
 
 var DB *sql.DB
@@ -27,16 +28,14 @@ func ConnectDB() {
 }
 
 func CreateTableIfNotExists() {
-	query := `CREATE TABLE IF NOT EXISTS url_data (id BIGSERIAL NOT NULL UNIQUE, shorturl VARCHAR(100) PRIMARY KEY, createdAt DATE, deleteAt DATE, Tag VARCHAR(30))`
-	res, err := DB.Exec(query)
+	query := `CREATE TABLE IF NOT EXISTS url_data (id BIGSERIAL NOT NULL UNIQUE, short_code VARCHAR(10) PRIMARY KEY, original_url TEXT, createdAt DATE, deleteAt DATE, tag VARCHAR(30))`
+	_, err := DB.Exec(query)
 	if err != nil {
 		log.Fatalf("Error creating url_data DB table: %v", err)
-	} else {
-		fmt.Println(res)
 	}
 }
 
-func GetCounter() {
+func GetCounter() int64 {
 	var nextVal int64
 	query := "SELECT nextval('url_data_id_seq'::regclass)"
 	err := DB.QueryRow(query).Scan(&nextVal)
@@ -44,5 +43,13 @@ func GetCounter() {
 	if err != nil {
 		log.Fatalf("Error in fetching the next sequence id: %v", err)
 	}
-	fmt.Println(nextVal)
+	return nextVal
+}
+
+func InsertShortUrl(urlDetails *models.ShortUrlDB) {
+	query := `INSERT INTO url_data(id, short_code, original_url, createdAt, deleteAt, tag) values ($1, $2, $3, $4, $5, $6)`
+	_, err := DB.Query(query, urlDetails.Id, urlDetails.ShortUrl, urlDetails.LongUrl, urlDetails.CreatedAt.Format("2006-01-02"), urlDetails.ExpireAt.Format("2006-01-02"), urlDetails.Tag)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
