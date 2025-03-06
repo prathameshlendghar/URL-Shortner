@@ -4,7 +4,7 @@ import "time"
 
 type NewUrlReq struct {
 	LongUrl     string `json:"url"`
-	ExpireAfter int16  `json:"expiry,omitempty"`
+	ExpireAfter int32  `json:"expiry,omitempty"`
 	Tag         string `json:"tag,omitempty"`
 }
 

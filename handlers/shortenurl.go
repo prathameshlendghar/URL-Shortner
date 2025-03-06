@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/prathameshlendghar/URL-Shortner/internal/database"
 	"github.com/prathameshlendghar/URL-Shortner/models"
+	"github.com/prathameshlendghar/URL-Shortner/utils"
 )
 
 func makeShortBase62(counter int64) string {
@@ -25,11 +28,8 @@ func makeShortBase62(counter int64) string {
 func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
 		response := map[string]string{"error": "Only POST Method is Allowed"}
-		json.NewEncoder(w).Encode(response)
-
+		utils.WriteJSONUtils(w, http.StatusMethodNotAllowed, response)
 		return
 	}
 
@@ -39,23 +39,23 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	var requestBody models.NewUrlReq
 	if err := decoder.Decode(&requestBody); err != nil {
-		http.Error(w, "error: Unable to parse request body", http.StatusBadRequest)
+		utils.WriteJSONUtils(w, http.StatusBadRequest, "error: Unable to parse request body")
 		return
 	}
+
 	//Check the validity of long url
 	longUrl := requestBody.LongUrl
 	parsedUrl, err := url.Parse(longUrl)
 
 	if err != nil {
 		errorstr := fmt.Sprintf("error: %v", err)
-		http.Error(w, errorstr, http.StatusBadRequest)
+		utils.WriteJSONUtils(w, http.StatusBadRequest, errorstr)
 		return
 	}
 
 	if parsedUrl.Scheme != "" && parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
-		w.WriteHeader(http.StatusBadRequest)
-		response := map[string]string{"error": "Supported methods are http and https"}
-		json.NewEncoder(w).Encode(response)
+		response := map[string]string{"error": "Supported Long URL methods are http and https"}
+		utils.WriteJSONUtils(w, http.StatusBadRequest, response)
 		return
 	}
 
@@ -64,37 +64,39 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	parsedUrl.RawQuery = url.QueryEscape(parsedUrl.RawQuery)
+	parsedLongUrl := parsedUrl.String()
 
-	// parsedLongUrl := parsedUrl.String()
+	fmt.Println(parsedLongUrl)
 
-	// fmt.Println(parsedLongUrl)
-
-	//TODO: Check for expiration is there or else give the expration
+	//Check for expiration is there or else give the expration
+	if requestBody.ExpireAfter == 0 {
+		exp_period, err := strconv.Atoi(os.Getenv("DEFAULT_EXPIRATION_PERIOD"))
+		if err != nil {
+			errStr := "Unable to read expireAt's duration"
+			http.Error(w, errStr, http.StatusBadRequest)
+		}
+		requestBody.ExpireAfter = int32(exp_period)
+	}
 
 	//Take the counter from postgres database
 	var counter int64 = database.GetCounter()
 
 	//Create a short url in base62 format
 	shortUniqueStr := makeShortBase62(counter)
-	// fmt.Println(shortUniqueStr)
 
-	//Store it inside the Database
-	var dbStruct models.ShortUrlDB
-	dbStruct.Id = counter
-	dbStruct.LongUrl = requestBody.LongUrl
-	dbStruct.ShortUrl = shortUniqueStr
-	dbStruct.CreatedAt = time.Now()
-	dbStruct.ExpireAt = dbStruct.CreatedAt.Add(48 * time.Hour)
-	dbStruct.Tag = "Abc"
+	//Store it inside the Database and return response
 
-	database.InsertShortUrl(&dbStruct)
+	dbStruct := models.ShortUrlDB{
+		Id:        counter,
+		LongUrl:   requestBody.LongUrl,
+		ShortUrl:  shortUniqueStr,
+		CreatedAt: time.Now(),
+		ExpireAt:  time.Now().Add(time.Duration(requestBody.ExpireAfter) * time.Hour),
+		Tag:       requestBody.Tag,
+	}
 
-	// if requestBody.ExpireAt != "" {
-	// 	dbStruct.ExpireAt = requestBody.ExpireAt
-	// } else {
-	// 	dbStruct.ExpireAt = time.Now() + time
-	// }
+	resp := database.InsertShortUrl(&dbStruct)
+	resp.ShortUrl = os.Getenv("SHORTURL_HOST") + "/" + resp.ShortUrl
 
-	//Return the short url to the user in writer response
-
+	utils.WriteJSONUtils(w, http.StatusAccepted, resp)
 }

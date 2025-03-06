@@ -46,10 +46,22 @@ func GetCounter() int64 {
 	return nextVal
 }
 
-func InsertShortUrl(urlDetails *models.ShortUrlDB) {
-	query := `INSERT INTO url_data(id, short_code, original_url, createdAt, deleteAt, tag) values ($1, $2, $3, $4, $5, $6)`
-	_, err := DB.Query(query, urlDetails.Id, urlDetails.ShortUrl, urlDetails.LongUrl, urlDetails.CreatedAt.Format("2006-01-02"), urlDetails.ExpireAt.Format("2006-01-02"), urlDetails.Tag)
+func InsertShortUrl(urlDetails *models.ShortUrlDB) models.ShortUrlResp {
+	var resp models.ShortUrlResp
+	query := `INSERT INTO url_data(id, short_code, original_url, createdAt, deleteAt, tag) 
+				values ($1, $2, $3, $4, $5, $6) RETURNING id, short_code, original_url, createdAt, deleteAt, tag`
+	var id int
+	err := DB.QueryRow(
+		query,
+		urlDetails.Id,
+		urlDetails.ShortUrl,
+		urlDetails.LongUrl,
+		urlDetails.CreatedAt.Format("2006-01-02"),
+		urlDetails.ExpireAt.Format("2006-01-02"),
+		urlDetails.Tag).Scan(&id, &resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
+
 	if err != nil {
 		log.Fatal(err)
 	}
+	return resp
 }
