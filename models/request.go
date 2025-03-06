@@ -8,6 +8,10 @@ type NewUrlReq struct {
 	Tag         string `json:"tag,omitempty"`
 }
 
+type GetInfoReq struct {
+	ShortUrl string `json:"shorturl"`
+}
+
 //TODO: Extend time for URL
 
 type ShortUrlDB struct {

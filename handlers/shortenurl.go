@@ -14,17 +14,6 @@ import (
 	"github.com/prathameshlendghar/URL-Shortner/utils"
 )
 
-func makeShortBase62(counter int64) string {
-	base62 := "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ+/"
-	var shortStr string = ""
-	for counter > 0 {
-		mod := counter % 62
-		shortStr = shortStr + string(base62[mod])
-		counter /= 62
-	}
-	return shortStr
-}
-
 func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
@@ -82,7 +71,7 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	var counter int64 = database.GetCounter()
 
 	//Create a short url in base62 format
-	shortUniqueStr := makeShortBase62(counter)
+	shortUniqueStr := utils.MakeShortBase62(counter)
 
 	//Store it inside the Database and return response
 
@@ -91,11 +80,11 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 		LongUrl:   requestBody.LongUrl,
 		ShortUrl:  shortUniqueStr,
 		CreatedAt: time.Now(),
-		ExpireAt:  time.Now().Add(time.Duration(requestBody.ExpireAfter) * time.Hour),
+		ExpireAt:  time.Now().Add(24 * time.Duration(requestBody.ExpireAfter) * time.Hour),
 		Tag:       requestBody.Tag,
 	}
 
-	resp := database.InsertShortUrl(&dbStruct)
+	resp, _ := database.InsertShortUrl(&dbStruct)
 	resp.ShortUrl = os.Getenv("SHORTURL_HOST") + "/" + resp.ShortUrl
 
 	utils.WriteJSONUtils(w, http.StatusAccepted, resp)

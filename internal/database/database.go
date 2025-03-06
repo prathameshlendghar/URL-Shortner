@@ -46,7 +46,7 @@ func GetCounter() int64 {
 	return nextVal
 }
 
-func InsertShortUrl(urlDetails *models.ShortUrlDB) models.ShortUrlResp {
+func InsertShortUrl(urlDetails *models.ShortUrlDB) (models.ShortUrlResp, error) {
 	var resp models.ShortUrlResp
 	query := `INSERT INTO url_data(id, short_code, original_url, createdAt, deleteAt, tag) 
 				values ($1, $2, $3, $4, $5, $6) RETURNING id, short_code, original_url, createdAt, deleteAt, tag`
@@ -60,8 +60,24 @@ func InsertShortUrl(urlDetails *models.ShortUrlDB) models.ShortUrlResp {
 		urlDetails.ExpireAt.Format("2006-01-02"),
 		urlDetails.Tag).Scan(&id, &resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-	return resp
+	return resp, err
+}
+
+func FetchLongUrl(shortUrl string) (string, error) {
+	var resp string
+	query := `SELECT original_url FROM url_data WHERE short_code = $1`
+	err := DB.QueryRow(query, shortUrl).Scan(&resp)
+
+	return resp, err
+}
+
+//Keeping the above and this funcion different because of latency and network load
+//Like why to send entire data when only redirection is required
+
+func FetchUrlInfo(shortUrl string) (models.ShortUrlDB, error) {
+	var resp models.ShortUrlDB
+	query := `SELECT original_url, short_code, createdat, deleteat, tag FROM url_data WHERE short_code = $1`
+	err := DB.QueryRow(query, shortUrl).Scan(&resp.LongUrl, &resp.ShortUrl, &resp.CreatedAt, &resp.ExpireAt, &resp.Tag)
+
+	return resp, err
 }
