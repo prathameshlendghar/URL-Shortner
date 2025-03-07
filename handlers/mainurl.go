@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -22,15 +23,13 @@ func GetMainURL(w http.ResponseWriter, r *http.Request) {
 	//Search into DB in the indexed column
 	resp, err := database.FetchLongUrl(shortUrlPath)
 	if err != nil {
+		fmt.Println(err)
 		utils.WriteJSONUtils(w, http.StatusInternalServerError, "Error: Unable to fetch the shortUrl")
 		return
 	}
-	if resp == "" {
-		utils.WriteJSONUtils(w, http.StatusNoContent, "No matching Url Entry")
-		return
-	}
+	
 	if !strings.HasPrefix(resp, "http://") && !strings.HasPrefix(resp, "https://") {
-		resp = "http://" + resp 
+		resp = "http://" + resp
 	}
 	http.Redirect(w, r, resp, http.StatusMovedPermanently)
 

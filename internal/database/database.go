@@ -49,8 +49,8 @@ func GetCounter() int64 {
 func InsertShortUrl(urlDetails *models.ShortUrlDB) (models.ShortUrlResp, error) {
 	var resp models.ShortUrlResp
 	query := `INSERT INTO url_data(id, short_code, original_url, createdAt, deleteAt, tag) 
-				values ($1, $2, $3, $4, $5, $6) RETURNING id, short_code, original_url, createdAt, deleteAt, tag`
-	var id int
+				values ($1, $2, $3, $4, $5, $6) RETURNING short_code, original_url, createdAt, deleteAt, tag`
+
 	err := DB.QueryRow(
 		query,
 		urlDetails.Id,
@@ -58,7 +58,7 @@ func InsertShortUrl(urlDetails *models.ShortUrlDB) (models.ShortUrlResp, error) 
 		urlDetails.LongUrl,
 		urlDetails.CreatedAt.Format("2006-01-02"),
 		urlDetails.ExpireAt.Format("2006-01-02"),
-		urlDetails.Tag).Scan(&id, &resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
+		urlDetails.Tag).Scan(&resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
 
 	return resp, err
 }
@@ -74,10 +74,35 @@ func FetchLongUrl(shortUrl string) (string, error) {
 //Keeping the above and this funcion different because of latency and network load
 //Like why to send entire data when only redirection is required
 
-func FetchUrlInfo(shortUrl string) (models.ShortUrlDB, error) {
+func FetchUrlInfo(shortCode string) (models.ShortUrlDB, error) {
 	var resp models.ShortUrlDB
 	query := `SELECT original_url, short_code, createdat, deleteat, tag FROM url_data WHERE short_code = $1`
-	err := DB.QueryRow(query, shortUrl).Scan(&resp.LongUrl, &resp.ShortUrl, &resp.CreatedAt, &resp.ExpireAt, &resp.Tag)
+	err := DB.QueryRow(query, shortCode).Scan(&resp.LongUrl, &resp.ShortUrl, &resp.CreatedAt, &resp.ExpireAt, &resp.Tag)
+
+	return resp, err
+}
+
+func UpdateUrlInfo(updateDetails models.UpdateReqDB, short_code string) (models.ShortUrlResp, error) {
+	var resp models.ShortUrlResp
+
+	if updateDetails.LongUrl == nil && updateDetails.ExpireAt != nil && updateDetails.Tag != nil {
+		errStr := fmt.Errorf("error: no valid update field")
+		return resp, errStr
+	}
+
+	query := "UPDATE url_data set "
+	if updateDetails.LongUrl != nil {
+		query += fmt.Sprintf("original_url='%s', ", *updateDetails.LongUrl)
+	}
+	if updateDetails.ExpireAt != nil {
+		query += fmt.Sprintf("deleteat='%v', ", *updateDetails.ExpireAt)
+	}
+	if updateDetails.Tag != nil {
+		query += fmt.Sprintf("tag='%s', ", *updateDetails.Tag)
+	}
+	query = query[:len(query)-2] + fmt.Sprintf(" WHERE short_code='%s' RETURNING short_code, original_url, createdAt, deleteAt, tag", short_code)
+	fmt.Println(query)
+	err := DB.QueryRow(query).Scan(&resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
 
 	return resp, err
 }

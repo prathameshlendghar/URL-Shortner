@@ -14,6 +14,19 @@ type GetInfoReq struct {
 
 //TODO: Extend time for URL
 
+type UpdateReq struct {
+	ShortUrl    string `json:"shorturl"`
+	LongUrl     string `json:"longurl,omitempty"`
+	ExpireAfter int32  `json:"expiry,omitempty"`
+	Tag         string `json:"tag,omitempty"`
+}
+
+type UpdateReqDB struct {
+	LongUrl  *string
+	ExpireAt *time.Time
+	Tag      *string
+}
+
 type ShortUrlDB struct {
 	Id        int64
 	LongUrl   string
