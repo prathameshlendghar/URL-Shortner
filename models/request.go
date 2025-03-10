@@ -4,8 +4,8 @@ import "time"
 
 type NewUrlReq struct {
 	LongUrl     string `json:"url"`
-	ExpireAfter int32  `json:"expiry,omitempty"`
-	Tag         string `json:"tag,omitempty"`
+	ExpireAfter int32  `json:"expiry"`
+	Tag         string `json:"tag"`
 }
 
 type GetInfoReq struct {
@@ -16,9 +16,9 @@ type GetInfoReq struct {
 
 type UpdateReq struct {
 	ShortUrl    string `json:"shorturl"`
-	LongUrl     string `json:"longurl,omitempty"`
-	ExpireAfter int32  `json:"expiry,omitempty"`
-	Tag         string `json:"tag,omitempty"`
+	LongUrl     string `json:"longurl"`
+	ExpireAfter int32  `json:"expiry"`
+	Tag         string `json:"tag"`
 }
 
 type UpdateReqDB struct {

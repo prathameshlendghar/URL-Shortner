@@ -26,18 +26,22 @@ func ShowInfo(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSONUtils(w, http.StatusBadRequest, errStr)
 		return
 	}
-
-	parsedRequestUrl, err := url.Parse("http://" + requestData.ShortUrl)
+	parsedRequestUrl, err := url.Parse(requestData.ShortUrl)
 	if err != nil {
 		utils.WriteJSONUtils(w, http.StatusBadRequest, "Error: Unable to Decode Request Body1")
 		return
 	}
+	if parsedRequestUrl.Scheme != "http" && parsedRequestUrl.Scheme != "https" {
+		parsedRequestUrl, err = url.Parse("http://" + requestData.ShortUrl)
+		if err != nil {
+			utils.WriteJSONUtils(w, http.StatusBadRequest, "Error: Unable to Decode Request Body1")
+			return
+		}
+	}
 
 	shortUrlCode := parsedRequestUrl.Path
 	shortUrlCode = shortUrlCode[1:]
-	fmt.Println(shortUrlCode)
 	resp, err := database.FetchUrlInfo(shortUrlCode)
-	// fmt.Println(resp)
 	if err != nil {
 		str := fmt.Sprintf("Error: Unable to fetch Info: %v", err)
 		utils.WriteJSONUtils(w, http.StatusInternalServerError, str)

@@ -14,7 +14,6 @@ var DB *sql.DB
 
 func ConnectDB() {
 	connectionString := fmt.Sprintf(os.Getenv("CONNECTION_STRING"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
-	fmt.Println(connectionString)
 	var err error
 	DB, err = sql.Open("postgres", connectionString)
 
@@ -90,19 +89,39 @@ func UpdateUrlInfo(updateDetails models.UpdateReqDB, short_code string) (models.
 		return resp, errStr
 	}
 
-	query := "UPDATE url_data set "
+	query := "UPDATE url_data SET "
+	var args []interface{}
+	argIndex := 1
+
 	if updateDetails.LongUrl != nil {
-		query += fmt.Sprintf("original_url='%s', ", *updateDetails.LongUrl)
+		query += fmt.Sprintf("original_url=$%d, ", argIndex)
+		args = append(args, *updateDetails.LongUrl)
+		argIndex++
 	}
 	if updateDetails.ExpireAt != nil {
-		query += fmt.Sprintf("deleteat='%v', ", *updateDetails.ExpireAt)
+		query += fmt.Sprintf("deleteat=$%d, ", argIndex)
+		args = append(args, *updateDetails.ExpireAt)
+		argIndex++
 	}
 	if updateDetails.Tag != nil {
-		query += fmt.Sprintf("tag='%s', ", *updateDetails.Tag)
+		query += fmt.Sprintf("tag=$%d, ", argIndex)
+		args = append(args, *updateDetails.Tag)
+		argIndex++
 	}
-	query = query[:len(query)-2] + fmt.Sprintf(" WHERE short_code='%s' RETURNING short_code, original_url, createdAt, deleteAt, tag", short_code)
-	fmt.Println(query)
-	err := DB.QueryRow(query).Scan(&resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
+
+	query = query[:len(query)-2]
+	query += fmt.Sprintf(" WHERE short_code=$%d RETURNING short_code, original_url, createdAt, deleteAt, tag", argIndex)
+	args = append(args, short_code)
+
+	err := DB.QueryRow(query, args...).Scan(&resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpiresAt, &resp.Tag)
+
+	return resp, err
+}
+
+func DeleteUrl(shortCode string) (models.ShortUrlDB, error) {
+	var resp models.ShortUrlDB
+	query := `DELETE FROM url_data WHERE short_code = $1 RETURNING short_code, original_url, createdAt, deleteAt, tag`
+	err := DB.QueryRow(query, shortCode).Scan(&resp.ShortUrl, &resp.LongUrl, &resp.CreatedAt, &resp.ExpireAt, &resp.Tag)
 
 	return resp, err
 }

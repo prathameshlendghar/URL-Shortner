@@ -22,7 +22,7 @@ func ValidateLongUrl(longUrl string) (string, error) {
 		parsedUrl.Scheme = "http"
 	}
 
-	parsedUrl.RawQuery = url.QueryEscape(parsedUrl.RawQuery)
+	parsedUrl.RawQuery, _ = url.QueryUnescape(parsedUrl.RawQuery)
 	parsedLongUrl := parsedUrl.String()
 	return parsedLongUrl, nil
 }

@@ -36,7 +36,6 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.WriteJSONUtils(w, http.StatusBadRequest, err)
 	}
-
 	//Check for expiration is there or else give the expration
 	if requestBody.ExpireAfter == 0 {
 		exp_period, err := strconv.Atoi(os.Getenv("DEFAULT_EXPIRATION_PERIOD"))
@@ -63,7 +62,6 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 		ExpireAt:  time.Now().Add(24 * time.Duration(requestBody.ExpireAfter) * time.Hour),
 		Tag:       requestBody.Tag,
 	}
-
 	resp, _ := database.InsertShortUrl(&dbStruct)
 	resp.ShortUrl = os.Getenv("SHORTURL_HOST") + "/" + resp.ShortUrl
 
