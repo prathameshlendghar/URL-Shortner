@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/prathameshlendghar/URL-Shortner/internal/server"
 )
 
@@ -19,7 +21,7 @@ func main() {
 	// This `godotenv.Load()` -> This function loads the environment variable into this process environment variables
 	err := godotenv.Load()
 	if err != nil {
-		slog.Error("Error loading .env file")
+		slog.Error("Error loading .env file", slog.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -31,7 +33,7 @@ func main() {
 	// Open may just validate its arguments without creating a connection to the database. To verify that the data source name is valid, call [DB.Ping].
 	dbConn, err := sql.Open(dbDriver, dbSource)
 	if err != nil {
-		slog.Error("Error loading .env file")
+		slog.Error("Error in validating database arguments", slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer dbConn.Close()
@@ -42,7 +44,7 @@ func main() {
 
 	err = dbConn.Ping()
 	if err != nil {
-		slog.Error("Error loading .env file")
+		slog.Error("Error in establishing DB connection", slog.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -60,10 +62,10 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	slog.Info("Server starting on %s", srv.Addr)
+	slog.Info(fmt.Sprintf("Server starting on %s", srv.Addr))
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("Error loading .env file")
+		slog.Error("Error in starting server", slog.Any("error", err))
 		os.Exit(1)
 	}
 }
