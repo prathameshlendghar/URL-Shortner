@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/prathameshlendghar/URL-Shortner/internal/auth"
 	"github.com/prathameshlendghar/URL-Shortner/internal/url"
 )
 
@@ -61,7 +62,8 @@ func main() {
 			log.Println("Error writing response: ", err)
 		}
 	})
-	url.SetupRoutes(router, dbConn, v) //Function where all routes are declared
+	auth.SetupRoutes(router, dbConn, v) //Function where all routes are declared
+	url.SetupRoutes(router, dbConn, v)  //Function where all routes are declared
 
 	srv := &http.Server{
 		Addr:         ":8080",
