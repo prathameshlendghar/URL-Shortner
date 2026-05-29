@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/prathameshlendghar/URL-Shortner/internal/server"
+	"github.com/prathameshlendghar/URL-Shortner/internal/url"
 )
 
 func main() {
@@ -52,7 +53,15 @@ func main() {
 	v := validator.New()
 
 	// Setting up the web server -> Pointing towards the routes
-	router := server.SetupRoutes(dbConn, v) //Function where all routes are declared
+	router := http.NewServeMux()
+	router.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte("Engine is running smoothly!"))
+		if err != nil {
+			log.Println("Error writing response: ", err)
+		}
+	})
+	url.SetupRoutes(router, dbConn, v) //Function where all routes are declared
 
 	srv := &http.Server{
 		Addr:         ":8080",
