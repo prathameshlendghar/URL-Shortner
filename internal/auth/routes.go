@@ -15,6 +15,6 @@ func SetupRoutes(mux *http.ServeMux, db *sql.DB, v *validator.Validate) {
 
 	// // ========================= Auth Routes ==============================//
 	mux.HandleFunc("POST /api/v1/auth/register", Handler.RegisterUser)
-	// mux.HandleFunc("POST /api/v1/auth/login", nil)
+	mux.HandleFunc("POST /api/v1/auth/login", Handler.LoginUser)
 
 }

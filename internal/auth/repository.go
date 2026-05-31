@@ -35,3 +35,18 @@ func (r *Repository) RegisterUser(ctx context.Context, userReq User) error {
 
 	return nil
 }
+
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	var user User
+
+	query := `SELECT id, email, password_hash FROM users WHERE email = $1 AND is_active = true`
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Email, &user.PasswordHash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, ErrInvalidCredentials
+		}
+		return User{}, err
+	}
+
+	return user, nil
+}
