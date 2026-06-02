@@ -12,6 +12,11 @@ type RegisterUserReq struct {
 	IsActive *bool  `json:"is_active"`
 }
 
+type LoginUserReq struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
 type CustomClaims struct {
 	UserID int `json:"user_id"`
 	jwt.RegisteredClaims

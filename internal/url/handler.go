@@ -1,12 +1,12 @@
 package url
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/prathameshlendghar/URL-Shortner/internal/auth"
 	customValidator "github.com/prathameshlendghar/URL-Shortner/pkg/validator"
 )
 
@@ -22,19 +22,17 @@ func NewHandler(service *Service, v *validator.Validate) *Handler {
 	}
 }
 
-type contextKey string
+// type contextKey string
 
-const UserIDKey contextKey = "userID"
+// const UserIDKey contextKey = "userID"
 
-func GetDummyUserThing(r **http.Request) {
-	dummyUserID := 1 // Ensure user ID 1 exists in your Postgres DB!
-	ctx := context.WithValue((*r).Context(), UserIDKey, dummyUserID)
-	*r = (*r).WithContext(ctx)
-}
+// func GetDummyUserThing(r **http.Request) {
+// 	dummyUserID := 1 // Ensure user ID 1 exists in your Postgres DB!
+// 	ctx := context.WithValue((*r).Context(), UserIDKey, dummyUserID)
+// 	*r = (*r).WithContext(ctx)
+// }
 
 func (h *Handler) CreateNewShortUrl(w http.ResponseWriter, r *http.Request) {
-	GetDummyUserThing(&r)
-
 	var newShortUrlReq CreateUrl
 
 	err := json.NewDecoder(r.Body).Decode(&newShortUrlReq)
@@ -54,10 +52,10 @@ func (h *Handler) CreateNewShortUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value(UserIDKey).(int)
+	userID, ok := r.Context().Value(auth.UserIDKey).(int)
 	if !ok {
 		// If there's no ID in the context, they aren't logged in.
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized: Wrong token info", http.StatusUnauthorized)
 		return
 	}
 

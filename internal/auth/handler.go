@@ -53,7 +53,19 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	tokenResp, err := h.service.LoginUser(r.Context(), "abcd@gmail.com", "prathamesh")
+	var req LoginUserReq
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil{
+		http.Error(w, "Failed Login: Invalid json payload", http.StatusBadRequest)
+		return 
+	}
+
+	if err := h.validator.Struct(req); err != nil{
+		http.Error(w, "Failed Login: Payload validation failed", http.StatusBadRequest)
+		return
+	}
+
+	tokenResp, err := h.service.LoginUser(r.Context(), req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, ErrInvalidCredentials) {
 			http.Error(w, "Failed Login: Invalid login credentials", http.StatusUnauthorized)
